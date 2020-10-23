@@ -61,7 +61,7 @@ ansible_python_interpreter
 
       与 ansible_python_interpreter 的工作方式相同,可设定如 ruby 或 perl 的路径....
 ```
-### ansile常用模块
+### ansible常用模块
 #### 主机连通性
 使用ansible web -m ping命令来进行主机连通性测试
 * 实例
