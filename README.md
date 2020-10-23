@@ -1,7 +1,23 @@
 # Ansible
-> Ansible是基于pythopytho
 
-### 安装
+> Ansible是基于python语言开放，只需在一台普通的服务器上运行即可，不需要在客户端服务器上安装客户端。因为Ansible是基于SSH 远程管理，而Linux 服务器大都离不开SSH，所以Ansible 不需要为配置工作添加额外的支持。
+
+> Ansible 安装使用非常简单，而且基于上千个插件和模块，实现各种软件、平台、版本的管理，支持虚拟容器多层级的部署。
+
+Ansible 自动化运维管理工具优点：
+* 轻量级，更新时只需要在操作机上进行一次更新即可
+* 采用SSH协议
+* 不需要客户端安装agent
+* 批量任务执行可以写成脚本，而且不用分发到远程客户端
+* 使用python 编写，维护更简单
+* 支持sudo 普通用户命令
+* 去中心化管理
+
+## Ansible 安装配置
+> Ansible 可以工作在linux / BSD / Mac OS X等平台，对python 环境版本最低要求为python 2.6以上。安装之后默认主目录为 /etc/ansible/，其中hosts文件为被管理主机，ansible.cfg为ansible主配置文件，roles为角色或插件路径。
+
+### Ansible 安装
+
 #### 从Github获取Ansible
 ```
 $ git clone git://github.com/ansible/ansible.git --recursive
@@ -25,8 +41,98 @@ sudo apt-add-repository ppa:ansible/ansible
 sudo apt-get update
 sudo apt-get install ansible
 ```
+### 配置参数
+> ansible 默认配置文件为 /etc/ansible/ansible.cfg，配置文件中可以对Ansible进行各项参数的调整，包括并发线程、用户、模块路径、配置优化等。
+#### ansible.cfg
+* [defaults]
+> 日常可能用到的配置，这些多数保持默认即可。
+```
+[defaults]
+inventory = /etc/ansible/hosts                                           #定义Inventory
+library =  /usr/share/my_modules/                                   #自定义lib库存放目录 
+remote_tmp = $HOME/.ansible/tmp                               #临时文件远程主机存放目录 
+local_tmp  =  $HOME/.ansible/tmp                                #临时文件本地存放目录 
+forks = 5                                                                        #默认开启的并发数 
+poll_interval   =  15                                                       #默认轮询时间间隔 
+sudo_user   =   root                                                      #默认sudo用户 
+ask_sudo_pass = True                                               #是否需要sudo密码 
+ask_pass = True                                                        #是否需要密码
+roles_path   =  /etc/ansible/roles                                #默认下载的Roles存放的目录 
+host_key_checking  = False                                     #首次连接是否需要检查key认证，建议设为False
+timeout   =  10                                                          #默认超时时间
+remote_user   =  root                                                         #如没有指定用户，默认使用的远程连接用户 
+log_path =  /var/log/ansible.log                               #执行日志存放目录 
+module_name  =  command                                  #默认执行的模块 
+action_plugins =  /usr/share/ansible/plugins/action              #action插件的存放目录 
+callback_plugins =  /usr/share/ansible/plugins/callback       #callback插件的存放目录 
+connection_plugins  =  /usr/share/ansible/plugins/connection   #connection插件的存放目录 
+lookup_plugins =  /usr/share/ansible/plugins/lookup       #lookup插件的存放目录 
+vars_plugins  =  /usr/share/ansible/plugins/vars            #vars插件的存放目录 
+filter_plugins  =  /usr/share/ansible/plugins/filter            #filter插件的存放目录 
+test_plugins  =  /usr/share/ansible/plugins/test             #test插件的存放目录 
+strategy_plugins  = /usr/share/ansible/plugins/strategy   #strategy插件的存放目录 
+fact_caching  =  memory                           #getfact缓存的主机信息存放方式 
+retry_files_enabled  = False                    
+retry_files_save_path =  ~/.ansible-retry   #错误重启文件存放目录
+```
 
-### Inventory文件
+* [privilege_escalation]
+> 出于安全角度考虑，部分公司不希望直接以root的高级管理员权限直接部署应用，往往会开放普通用户权限并给予sudo的权限，该部分配置主要针对sudo用户提权的配置 
+```
+become = True         #是否sudo
+become_method=sudo   #sudo 方式 
+become_user=root     #sudo后变为root用户 
+become_ask_pass=False   #sudo后是否验证密码
+```
+
+* [privilege_connection]
+> 该配置不常用到
+```
+record_host_keys=False   #不记录新主机的key以提升效率
+pty=False        #禁用sudo功能
+```
+
+* [ssh_connection]
+> Ansible默认使用的是SSH协议进行与对端主机进行通信。但配置项较少，多数默认即可
+```
+pipelining = False
+```
+
+* [accelerate]
+> Ansible连接加速相关配置。多数保持默认即可
+```
+accelerate_port  =  5099          #加速连接端口
+accelerate_timeout  =  30        #命令执行超时时间，单位秒
+accelerate_connect_timeout = 5.0   #连接超时时间，单位秒
+accelerate_multi_key  =  yes    
+```
+
+* [selinux]
+> 关于selinux的相关配置几乎不会涉及，保持默认配置即可
+```
+libvirt_lxc_noseclabel  =  yes
+libvirt_lxc_noseclabel  =  yes 
+```
+
+* [colors]
+> Ansible对于输出结果的颜色也进行了详尽的定义且可配置，保持默认即可
+```
+highlight  =  white
+verbose  =  blue
+warn   =  bright purple
+error  =   red
+debug  =  dark  gray
+deprecate  =  purple
+skip  =  cyan
+unrechable  =  red
+ok    =  green
+changed  =  yellow
+diff_add  =  green 
+diff_remove  =  red
+diff_lines   =  cyan
+```
+
+#### Inventory文件（hosts）
 ```
 ansible_ssh_host
       将要连接的远程主机名.与你想要设定的主机的别名不同的话,可通过此变量设置.
