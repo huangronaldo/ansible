@@ -1,0 +1,181 @@
+# 初始化服务：安装基础工具，修改句柄，创建engine用户并实现免密登录，修改时区，增加阿里云监控
+---
+
+- name: Show OS Info
+  debug:
+    msg: "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}, Host: {{ ansible_hostname }}, IP: {{ ansible_all_ipv4_addresses }}, Mem: {{ ansible_memtotal_mb }}, CPU: {{ ansible_processor_vcpus }}"
+
+- name: Update Source List
+  template: src=sources.list.20.04.j2 dest=/etc/apt/sources.list
+  when: is_update_source_list == true and ansible_os_family == "Debian" and ansible_distribution_version == "20.04"
+
+- name: Update Source List
+  template: src=sources.list.18.04.j2 dest=/etc/apt/sources.list
+  when: is_update_source_list == true and ansible_os_family == "Debian" and ansible_distribution_version == "18.04"  
+
+- name: Apt Update
+  shell: apt-get update 
+  when: ansible_os_family == "Debian"  
+
+- name: Install Basic Tools - Debian
+  apt: name={{ item }} state=latest update_cache=yes
+  with_items:
+  - htop
+  - wget
+  - curl
+  - telnet
+  - iotop
+  - vim
+  - python-pip
+  - python-dev
+  - libmariadbclient18
+  - libmariadbd-dev
+  - software-properties-common
+  when: ansible_os_family == "Debian" and ansible_distribution_version == "18.04"
+
+- name: Install Basic Tools - Debian
+  apt: name={{ item }} state=latest update_cache=yes
+  with_items:
+  - htop
+  - wget
+  - curl
+  - telnet
+  - iotop
+  - vim
+  - python3-pip
+  - python3-dev
+  - libmariadb-dev 
+  - libmariadbd-dev
+  - software-properties-common
+  when: ansible_os_family == "Debian" and  ansible_distribution_version == "20.04"
+  ignore_errors: yes
+
+- name: Install Basic Tools - Redhat
+  yum: name={{ item }} state=latest update_cache=yes
+  with_items:
+  - htop
+  - wget
+  - curl
+  - telnet
+  - iotop
+  - vim
+  - python-pip
+  - python-dev
+  - libmysqld-dev
+  - libmysqlclient-dev
+  - software-properties-common
+  when: ansible_os_family == "Redhat"
+
+- name: Change limits.conf soft
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      *      soft     nproc      65535
+      *      hard     nproc      65535
+      *      soft     nofile     65535
+      *      hard     nofile     65535
+      root   soft     nproc      65535
+      root   hard     nproc      65535
+      root   soft     nofile     65535
+      root   hard     nofile     65535
+      engine soft     nproc      65535
+      engine hard     nproc      65535
+      engine soft     nofile     65535
+      engine hard     nofile     65535
+
+- name: Change system.conf DefaultLimitCORE
+  lineinfile:
+    dest: /etc/systemd/system.conf
+    regexp: 'DefaultLimitCORE'
+    backrefs: no
+    line: 'DefaultLimitCORE=infinity'
+
+- name: Change system.conf DefaultLimitNOFILE
+  lineinfile:
+    dest: /etc/systemd/system.conf
+    regexp: 'DefaultLimitNOFILE'
+    backrefs: no
+    line: 'DefaultLimitNOFILE=100000'
+
+- name: Change system.conf 
+  lineinfile:
+    dest: /etc/systemd/system.conf
+    regexp: 'DefaultLimitNPROC'
+    backrefs: no
+    line: 'DefaultLimitNPROC=100000'
+
+- name: Set hostname
+  raw: "echo {{hostname|quote}} > /etc/hostname"
+  run_once: true
+
+- name: Set hostname
+  shell: hostname {{hostname|quote}}
+
+- name: Set hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^127.0.0.1	localhost"
+    line: "127.0.0.1	localhost       {{hostname|quote}}"
+    backup: yes
+
+
+- name: Create User Group
+  group:
+    name: engine
+    state: present
+
+- name: Config sudo NOPASSWD
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%engine'
+    line: '%engine   ALL=(ALL) NOPASSWD: ALL'
+
+- name: Create User
+  user:
+    name: engine
+    shell: /bin/bash
+    groups: engine
+    createhome: yes
+    home: /home/engine
+    state: present
+
+- name: Install SSH Key
+  authorized_key: 
+    user: engine
+    key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}" 
+    state: present
+
+- name: PubkeyAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PubkeyAuthentication"
+    line: "PubkeyAuthentication yes"
+    backup: yes
+
+- name: NO UseDNS
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#UseDNS"
+    line: "UseDNS no"
+    backup: yes
+
+- name: NO GSSAPIAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#GSSAPIAuthentication"
+    line: "GSSAPIAuthentication no"
+    backup: yes
+
+- name: Reload SSH Profile
+  systemd:
+    name: sshd
+    state: restarted
+
+- name: Set TZ to Asia/Shanghai
+  timezone:
+    name: Asia/Shanghai
+
+- name: Add aliyun cloudmonitor
+  shell: 'CMS_AGENT_ACCESSKEY=bLjlq1yBRHM CMS_AGENT_SECRETKEY=MikiQE_mILQ1rAmSAX_HZA ARGUS_VERSION=3.4.4 /bin/bash -c "$(curl -s http://cms-download.aliyun.com/Argus/agent_install_necs-1.2.sh)"'
+

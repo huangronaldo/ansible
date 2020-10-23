@@ -1,0 +1,4 @@
+---
+mount_dir: /app
+device_name: /dev/sdb
+parted_number: 1

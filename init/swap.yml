@@ -1,0 +1,6 @@
+# 服务器ssh免密登陆
+---
+- hosts: init-server
+  gather_facts: yes
+  roles:
+    - swap

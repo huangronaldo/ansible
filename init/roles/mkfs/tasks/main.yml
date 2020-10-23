@@ -1,0 +1,24 @@
+# 初始化服务：挂载磁盘
+---
+
+- name: 判断磁盘是否存在
+  shell: test -b {{ device_name }} 
+  register: result
+  ignore_errors: true
+
+- name: 磁盘不存在直接报错
+  debug:
+    msg: "{{ device_name }} not exists"
+  when: result.rc != 0
+
+- name: 磁盘分区
+  parted: device={{ device_name }} number={{ parted_number }} state=present
+  when: result.rc == 0 
+
+- name: 格式化
+  filesystem: fstype=ext4 dev={{ device_name }}{{ parted_number }}
+  when: result.rc == 0  
+
+- name: 磁盘挂载
+  mount: path={{ mount_dir }} src={{ device_name }}{{ parted_number }} fstype=ext4 opts=defautls,noatime state=mounted 
+  when: result.rc == 0

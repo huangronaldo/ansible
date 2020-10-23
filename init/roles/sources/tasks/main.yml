@@ -1,0 +1,15 @@
+# 初始化服务：需要软件源为国内源-阿里源
+---
+- name: Bakup sources.list
+  shell: cp /etc/apt/sources.list /etc/apt/sources.list.bak{{ '%Y%m%d' | strftime(ansible_date_time.epoch) }}
+
+- name: Copy sources.list 
+  template: src=sources.list.ubuntu.16.04.j2 dest=/etc/apt/sources.list
+  when: ansible_distribution_version == "16.04"
+
+- name: Copy sources.list
+  template: src=sources.list.ubuntu.18.04.j2 dest=/etc/apt/sources.list
+  when: ansible_distribution_version == "18.04"
+
+- name: APT Update
+  shell: apt install update 

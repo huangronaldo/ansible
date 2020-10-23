@@ -1,0 +1,20 @@
+# 创建Engine用户并免密登陆
+---
+- name: 1 Install SSH Key
+  authorized_key: 
+    user: root
+    key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}" 
+    state: present
+
+- name: 2 Permit root Login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin prohibit-password"
+    backup: yes
+
+- name: 3 Reload SSH Profile
+  systemd:
+    name: sshd
+    state: restarted
+ 

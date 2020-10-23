@@ -1,0 +1,24 @@
+# 初始化服务：增加Swap
+---
+
+- name: Show OS Info
+  debug:
+    msg: "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}, Host: {{ ansible_hostname }}, IP: {{ ansible_all_ipv4_addresses }}, Mem: {{ ansible_memtotal_mb }}, CPU: {{ ansible_processor_vcpus }}"
+
+- name: Create Swap Dir
+  file: path=/app/swap state=directory
+  
+- name: Create Swap File
+  shell: cd /app/swap; dd if=/dev/zero of=swapfile bs={{ ansible_memtotal_mb }}k count=1024
+
+- name: Create Swap
+  shell: cd /app/swap; mkswap swapfile
+
+- name: Swap On
+  shell: cd /app/swap; swapon swapfile
+
+- name: Bakup fstab 
+  shell: cp /etc/fstab /etc/fstab.bak{{ '%Y%m%d' | strftime(ansible_date_time.epoch) }}
+
+- name: Set fstab
+  shell:  echo '/app/swap/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
