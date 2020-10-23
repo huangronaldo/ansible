@@ -168,6 +168,15 @@ ansible_python_interpreter
 # 与 ansible_python_interpreter 的工作方式相同,可设定如 ruby 或 perl 的路径....
 ```
 ### ansible常用模块
+
+### ansible的简单使用方式
+> ansible -i /etc/ansible/hosts 主机或主机组 -m 指定模块 -a 命令 
+```
+-i：指定配置文件位置，不指定默认去/etc/ansible/hosts 里找 
+-m：指定操作模块,后跟模块名 
+-a：发布，后面跟命令
+```
+
 #### 主机连通性
 使用ansible web -m ping命令来进行主机连通性测试
 
