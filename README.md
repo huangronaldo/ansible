@@ -385,10 +385,64 @@ Ansible playbook使用场景
 * 执行一些简单的任务，使用ad-hoc命令可以方便的解决问题，但是有时一个设施过于复杂，需要大量的操作时候，执行的ad-hoc命令是不适合的，这时最好使用playbook。
 * 就像执行shell命令与写shell脚本一样，也可以理解为批处理任务，不过playbook有自己的语法格式。
 * 使用playbook你可以方便的重用这些代码，可以移植到不同的机器上面，像函数一样，最大化的利用代码。在你使用Ansible的过程中，你也会发现，你所处理的大部分操作都是编写playbook。可以把常见的应用都编写成playbook，之后管理服务器会变得十分简单。
-#### playbook格式
+#### playbook YAML 语法
+* YAML的语法和其他高阶语言类似并且可以简单表达清单、散列表、标量等数据结构。（列表用横杆表示，键值对用冒号分割，键值对里又可以嵌套另外的键值对）
+* YAML文件扩展名通常为.yaml或者.yml。下面为示例
+* 一定要对齐，只能使用空格
 
+##### 实例
+```
+# 初始化服务器
+---
+- hosts: init-server
+  user: root
+  tasks:
+    - name: playbook_test
+      shell: touch /tmp/playbook.txt
+```
+* hosts: 指定了对哪些主机进行参作；
+* user: 指定了使用什么用户登录远程主机操作；
+* tasks: 指定了一个任务，其下面的name参数同样是对任务的描述，在执行过程中会打印出来。
 
+#### playbook 核心组件
+* tasks：任务
+* variables：变量
+* templates：模板
+* handlers：处理器
+* roles：角色
 
+##### 实例
+> jdk.yml 
+```
+# 安装jdk
+---
+- hosts: engine
+  remote_user: engine
+  gather_facts: yes
+  become: yes
+  become_user: root
+  become_method: sudo
+  roles:
+    - jdk
+```
+
+> roles/jdk/tasks/main.yml 
+```
+# 安装openjdk至远程服务器
+---
+- name: 安装openjdk
+  apt: name=openjdk-8-jdk update_cache=yes state=present
+  when: ansible_os_family == "Debian"
+
+- name: 安装openjdk
+  yum: name=java-1.8.0-openjdk-devel.x86_64 state=present
+  when: ansible_os_family == "RedHat"
+
+```
+* name: 对该playbook实现的功能做一个概述，后面执行过程中，会打印 name变量的值 ，可以省略；
+* gather_facts: 指定了在以下任务部分执行前，是否先执行setup模块获取主机相关信息，这在后面的task会使用到setup获取的信息时用到；
+* vars: 指定了变量，这里指字一个user变量，其值为test ，需要注意的是，变量值一定要用引号引住；
+* user: 提定了调用user模块，name是user模块里的一个参数，而增加的用户名字调用了上面user变量的值。
 
 ### 附录
 #### Linux常用命令
