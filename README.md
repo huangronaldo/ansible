@@ -442,7 +442,25 @@ Ansible playbook使用场景
 * name: 对该playbook实现的功能做一个概述，后面执行过程中，会打印 name变量的值 ，可以省略；
 * gather_facts: 指定了在以下任务部分执行前，是否先执行setup模块获取主机相关信息，这在后面的task会使用到setup获取的信息时用到；
 * vars: 指定了变量，这里指字一个user变量，其值为test ，需要注意的是，变量值一定要用引号引住；
-* user: 提定了调用user模块，name是user模块里的一个参数，而增加的用户名字调用了上面user变量的值。
+* apt/yum: 提定了调用user模块，name是user模块里的一个参数，而增加的用户名字调用了上面user变量的值。
+* when: 条件判断，一般用于针对不同版本的系统，比如对centos、ubuntu 等系统进行不同的操作命令。
+
+#### playbook handlers
+当我们执行 tasks 后，服务器发生变化之后我们要执行一些操作。比如我们修改了某个服务的配置文件，需要重启下服务。
+```
+---
+- name: handlers test
+  hosts: testhost
+  user: root
+  tasks:
+    - name: test copy
+      copy: src=/etc/passwd dest=/tmp/handlers.txt
+      notify: test handlers
+  handlers:
+     - name: test handlers
+     shell: echo "www.huangt.com" >> /tmp/handlers.txt
+```
+> 说明：只有 copy 模块真正执行后，才会去调用下面的 handlers 相关的操作，追加内容。也就是说如果 src 和 dest 内容是一样的，并不会去执行 handlers 里面的 shell 相关命令。所以这种比较适合配置文件发生更改后，需要重启服务的操作。
 
 ### 附录
 #### Linux常用命令
