@@ -1,0 +1,170 @@
+# 创建mariadb数据库
+---
+- name: MariaDB Server Key - Debian
+  apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.asc
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: MariaDB Server Repository - Debian
+  apt_repository:
+    repo: deb [arch=amd64,arm64,i386,ppc64el] https://mirrors.tuna.tsinghua.edu.cn/mariadb/repo/10.4/ubuntu xenial main
+    state: present
+  when: ansible_distribution_version == "16.04"
+- name: MariaDB Server Repository - Debian
+  apt_repository:
+    repo: deb [arch=amd64,arm64,ppc64el] https://mirrors.tuna.tsinghua.edu.cn/mariadb/repo/10.4/ubuntu bionic main
+    state: present
+  when: ansible_distribution_version == "18.04"
+- name: MariaDB Server Repository - Debian
+  apt_repository:
+    repo: deb [arch=amd64,arm64,ppc64el] https://mirrors.tuna.tsinghua.edu.cn/mariadb/repo/10.4/ubuntu focal main
+    state: present
+  when: ansible_distribution_version == "20.04"
+- name: MariaDB Server Repository - RedHat
+  yum_repository:
+    name: MariaDB
+    description: MariaDB Rrpo 
+    baseurl: https://yum.mariadb.org/10.4/rhel7-ppc64
+    gpgcheck: yes
+    gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+    state: present
+  when: ansible_os_family == "RedHat" and ansible_distribution != "CentOS"
+- name: MariaDB Server Repository - CentOS
+  yum_repository:
+    name: MariaDB
+    description: MariaDB Rrpo
+    baseurl: https://mirrors.aliyun.com/mariadb/yum/10.4/centos7-amd64
+    gpgcheck: yes
+    gpgkey: https://mirrors.aliyun.com/mariadb/yum/RPM-GPG-KEY-MariaDB
+    state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+- name: Install MariaDB Server - Debian
+  apt: name=mariadb-server state=present
+  when: ansible_os_family == "Debian"
+- name: Install MariaDB Server - RedHat
+  yum: name=mariadb-server state=present update_cache=yes  enablerepo=MariaDB
+  when: ansible_os_family == "RedHat"
+
+- name: Install MariaDB Client - Debian
+  apt: name=mariadb-client state=present
+  when: ansible_os_family == "Debian"
+- name: Install MariaDB Client - Debian
+  yum: name=mariadb state=present
+  when: ansible_os_family == "RedHat"
+
+- name: Install python-devel pip
+  yum: name=python-devel,python2-pip state=present
+  when: ansible_os_family == "RedHat"
+
+- name: Install MariaDB libmysqlclient-dev
+  apt: name=libmysqlclient-dev state=present
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+
+- name: Install MariaDB MySQL-python
+  pip: name=MySQL-python state=present
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+- name: Install MariaDB MySQL-python
+  yum: name=MySQL-python state=present
+  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
+
+- name: Stop MariaDB 
+  shell: systemctl stop mariadb
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+
+- name: Config my.cnf
+  template: src=my.cnf.j2 dest=/etc/mysql/my.cnf
+  when: ansible_os_family == "Debian"
+  run_once: true
+- name: Config my.cnf
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+  when: ansible_os_family == "RedHat"
+  run_once: true
+
+- name: Create MySQL DataDir
+  file: path={{mysql_datadir}} state=directory mode=755 group=mysql owner=mysql
+
+- name: Create MySQL DataDir
+  file: path=/etc/mysql/conf.d state=directory mode=755
+  when: ansible_os_family == "RedHat"
+  
+- name: Move MySQL Data File
+  shell: "cp -a -r {{mysql_datadir}} {{mysql_datadir}}{{ '%Y%m%d' | strftime(ansible_date_time.epoch) }}"
+  run_once: true
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+
+- name: Move MySQL Data File
+  shell: "cp -a -r /var/lib/mysql/mysql {{mysql_datadir}}/"
+  run_once: true
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+
+- name: Install MySQL DB - RedHat 
+  shell: '/usr/bin/mysql_install_db --datadir=" {{mysql_datadir}}" --user="mysql"'
+  run_once: true
+  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
+
+- name: Create DIR
+  file: path={{ mysql_datadir }}/log state=directory group=mysql owner=mysql
+
+- name: Create DIR
+  file: path={{ mysql_datadir }}/binlog state=directory group=mysql owner=mysql
+
+- name: Restart MariaDB Service
+  service: name=mariadb state=restarted enabled=yes
+
+- name: Copy secure.txt
+  template: src=secure.txt.j2 dest=/tmp/secure.txt
+  when: ansible_os_family == "RedHat"
+- name: Secure installation 
+  shell: '/usr/bin/mysql_secure_installation < /tmp/secure.txt'
+  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
+
+- name: Set Root PWD
+  mysql_user:
+    user={{ root_db_user }} password={{ root_db_pwd }} update_password=always
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+- name: Set Root PWD
+  mysql_user:
+    user={{ root_db_user }} password={{ root_db_pwd }} update_password=always login_user={{ root_db_user }} login_password={{ root_db_pwd }}
+  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
+
+- name: Create MariaDB User
+  mysql_user: 
+    name=engine_{{inventory_hostname}} password=Engine{{inventory_hostname}}{{ '%Y%m%d' | strftime(ansible_date_time.epoch) }} host='%' state=present login_user={{ root_db_user }} login_password={{ root_db_pwd }}
+  ignore_errors: yes
+
+- name: Copy MariaDB CreateDBSql
+  template: src=create_db.sql.j2 dest={{ dest_dir }}/{{ create_db_sql}}
+
+- name: Import MariaDB Databases
+  mysql_db: name=mysql state=import target={{ dest_dir }}/{{ create_db_sql}} login_user={{ root_db_user }} login_password={{ root_db_pwd }}
+  notify:
+    - remove create_db.sql
+  ignore_errors: yes
+
+- name: Create DIR
+  file: path={{bak_mysql_dir}} state=directory
+
+- name: Copy MySQL Dump Shell
+  template: src=mysql_dump.sh.j2 dest={{bak_mysql_dir}}/mysql_dump.sh mode=755
+
+- name: Copy MySQL Conn
+  copy: src=conn_mysql.sh dest={{bak_mysql_dir}}/conn_mysql.sh mode=755
+
+- name: Backup Databases Everyday
+  cron:
+    name: Backup Engine Databases Everyday
+    minute: 58
+    hour: 04
+    job: "/bin/bash {{bak_mysql_dir}}/mysql_dump.sh"

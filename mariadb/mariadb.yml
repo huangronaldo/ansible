@@ -1,0 +1,9 @@
+# Engine服务器
+---
+- hosts: init-server
+  remote_user: root
+  become: yes
+  become_user: root
+  become_method: sudo
+  roles:
+    - { role: mariadb, tags: mariadb }

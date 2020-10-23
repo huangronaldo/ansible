@@ -1,0 +1,10 @@
+# 服务器ssh免密登陆
+---
+- hosts: init-server
+  remote_user: engine
+  gather_facts: yes
+  become: yes
+  become_user: root
+  become_method: sudo
+  roles:
+    - jdk

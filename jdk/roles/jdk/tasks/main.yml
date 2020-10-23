@@ -1,0 +1,10 @@
+# 安装openjdk至远程服务器
+---
+- name: 安装openjdk
+  apt: name=openjdk-8-jdk update_cache=yes state=present
+  when: ansible_os_family == "Debian"
+
+- name: 安装openjdk
+  yum: name=java-1.8.0-openjdk-devel.x86_64 state=present
+  when: ansible_os_family == "RedHat"
+ 

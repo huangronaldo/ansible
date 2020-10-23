@@ -1,0 +1,7 @@
+---
+- name: restart mariadb
+  service: name=mysql state=restarted
+
+- name: remove create_db.sql
+  file: path={{ dest_dir }}/{{ create_db_sql}} state=absent
+

@@ -1,0 +1,4 @@
+create database engine_{{ inventory_hostname }}_pdt default character set utf8mb4 collate utf8mb4_unicode_ci;
+create database engine_{{ inventory_hostname }}_test default character set utf8mb4 collate utf8mb4_unicode_ci;
+GRANT SELECT, INSERT, UPDATE, DELETE,  DROP, ALTER , CREATE , INDEX ON engine_{{ inventory_hostname }}_test.* TO engine_{{ inventory_hostname }};
+GRANT SELECT, INSERT, UPDATE, DELETE,  DROP, ALTER , CREATE , INDEX ON engine_{{ inventory_hostname }}_pdt.* TO engine_{{ inventory_hostname }};

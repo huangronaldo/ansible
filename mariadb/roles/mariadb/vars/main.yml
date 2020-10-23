@@ -1,0 +1,6 @@
+root_db_user: root
+root_db_pwd: 88b32b40150c11ebb8370f82feddb097
+create_db_sql: create_db.sql
+dest_dir: /tmp
+mysql_datadir: /app/mysql/datadir
+bak_mysql_dir: /app/bak/mysql

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# 设置mysql备份目录
+folder=/app/bak/mysql
+cd $folder
+day=`date +%Y%m%d`
+rm -rf $day
+mkdir $day
+cd $day
+# 数据库服务器，一般为localhost
+host=localhost
+# 用户名
+user={{ root_db_user }}
+# 密码
+password={{ root_db_pwd }}
+# 端口
+port=3306
+
+# 数据要保留的天数
+days=10
+mysqldump -h$host -u$user -P$port -p$password engine_{{ inventory_hostname }}_test>engine_{{ inventory_hostname }}_test.sql
+mysqldump -h$host -u$user -P$port -p$password engine_{{ inventory_hostname }}_pdt>engine_{{ inventory_hostname }}_pdt.sql
+
+cd ..
+day=`date -d "$days days ago" +%Y%m%d`
+rm -rf $day
+
+#############
+#异地备份
+#rsync -vlzrtogp --progress --delete /$folder/ root@192.168.1.100:/app/bak/mysql/
+#############
