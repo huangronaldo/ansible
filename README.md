@@ -66,6 +66,8 @@ ansible_python_interpreter
 使用ansible web -m ping命令来进行主机连通性测试
 * 实例
 ```
+ansible web -m ping
+# 其中web为host组
 ```
 #### command模块
 直接在远程主机上执行命令，并将结果返回本主机。
