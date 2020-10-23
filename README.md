@@ -248,7 +248,7 @@ ansible web -m file -a 'path=/data/a state=absent'
 ```
 #### fetch模块
 用于从远程某主机获取（复制）文件到本地。
-```json
+```
 dest：用来存放文件的目录
 src：在远程拉取的文件，并且必须是一个file，不能是目录
 ```
